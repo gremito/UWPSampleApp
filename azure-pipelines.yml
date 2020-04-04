@@ -34,3 +34,13 @@ steps:
     targetPath: $(appxPackageDir)
     artifactName: 'VSBuildResults'
 
+- task: AppCenterDistribute@3
+  inputs:
+    serverEndpoint: 'release to app center'
+    appSlug: '$(appSlug)'
+    buildVersion: '$(Build.BuildNumber)'
+    appFile: '$(Build.ArtifactStagingDirectory)/$(Build.BuildId).zip'
+    releaseNotesOption: 'input'
+    releaseNotesInput: 'New release!'
+    destinationType: 'groups'
+    distributionGroupId: '$(distributionGroupId)'
