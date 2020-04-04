@@ -36,7 +36,7 @@ steps:
 
 - task: AppCenterDistribute@3
   inputs:
-    serverEndpoint: 'release to app center'
+    serverEndpoint: 'DeployApp'
     appSlug: '$(appSlug)'
     buildVersion: '$(Build.BuildNumber)'
     appFile: '$(Build.ArtifactStagingDirectory)/$(Build.BuildId).zip'
