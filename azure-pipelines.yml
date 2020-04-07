@@ -69,7 +69,7 @@ steps:
     inputs:
       serverEndpoint: 'AppCenter'
       appSlug: '$(appSlug)'
-      appFile: '$(Pipeline.Workspace)/$(Build.BuildId).zip'
+      appFile: '$(Build.ArtifactStagingDirectory)/$(Build.BuildId).zip'
       buildVersion: '$(Build.BuildNumber)'
       symbolsOption: 'Windows'
       releaseNotesOption: 'input'
