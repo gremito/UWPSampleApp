@@ -4,43 +4,94 @@
 # https://aka.ms/yaml
 
 trigger:
-- master
+    branches:
+        include:
+            - '*'
+    tags:
+        include:
+            - '*'
 
-pool:
-  vmImage: 'windows-latest'
+jobs:
+    - job: Windows
+      pool:
+        vmImage: 'windows-latest'
 
-variables:
-  solution: './*.sln'
-  buildPlatform: 'x86|x64|ARM'
-  buildConfiguration: 'Release'
-  appxPackageDir: '$(build.artifactStagingDirectory)\AppxPackages\\'
+      variables:
+        solution: './*.sln'
+        buildPlatform: 'x86|x64|ARM'
+        buildConfiguration: 'Release'
+        appxPackageDir: '$(build.artifactStagingDirectory)\AppxPackages\\'
 
-steps:
-- task: NuGetToolInstaller@1
+      steps:
+      - task: NuGetToolInstaller@1
 
-- task: NuGetCommand@2
-  inputs:
-    restoreSolution: '$(solution)'
+      - task: NuGetCommand@2
+        inputs:
+          restoreSolution: '$(solution)'
 
-- task: VSBuild@1
-  inputs:
-    platform: 'x86'
-    solution: '$(solution)'
-    configuration: '$(buildConfiguration)'
-    msbuildArgs: '/p:AppxBundlePlatforms="$(buildPlatform)" /p:AppxPackageDir="$(appxPackageDir)" /p:AppxBundle=Always /p:UapAppxPackageBuildMode=StoreUpload'
+      - task: VSBuild@1
+        inputs:
+          platform: 'x86'
+          solution: '$(solution)'
+          configuration: '$(buildConfiguration)'
+          # msbuildArgs: '/p:AppxBundlePlatforms="$(buildPlatform)" 
+          #               /p:AppxPackageDir="$(appxPackageDir)" 
+          #               /p:AppxBundle=Always 
+          #               /p:UapAppxPackageBuildMode=StoreUpload 
+          #               /p:AppxPackageSigningEnabled=true
+          #               /p:PackageCertificateThumbprint="$(signingCert.thumbprint)" 
+          #               /p:PackageCertificateKeyFile="$(mySecureFile.secureFilePath)"
+          #               /p:PackageCertificatePassword="$(signingCert.password)"'
+          msbuildArgs: '/p:AppxBundlePlatforms="$(buildPlatform)" 
+                        /p:AppxPackageDir="$(appxPackageDir)" 
+                        /p:AppxBundle=Always 
+                        /p:UapAppxPackageBuildMode=StoreUpload'
 
-- task: PublishPipelineArtifact@1
-  inputs:
-    targetPath: $(appxPackageDir)
-    artifactName: 'VSBuildResults'
+      - task: CopyFiles@2
+        displayName: 'Copy Files to: $(build.artifactstagingdirectory)'
+        inputs:
+          SourceFolder: '$(system.defaultworkingdirectory)'
+          Contents: '**\bin\$(BuildConfiguration)\**'
+          TargetFolder: '$(build.artifactstagingdirectory)'
 
-- task: AppCenterDistribute@3
-  inputs:
-    serverEndpoint: 'UWP-Sample-App'
-    appSlug: '$(appSlug)'
-    buildVersion: '$(Build.BuildNumber)'
-    appFile: '$(Build.ArtifactStagingDirectory)/$(Build.BuildId).zip'
-    releaseNotesOption: 'input'
-    releaseNotesInput: 'New release!'
-    destinationType: 'groups'
-    distributionGroupId: '$(distributionGroupId)'
+      - task: ArchiveFiles@2
+        inputs:
+          rootFolderOrFile: '$(build.artifactstagingdirectory)'
+          includeRootFolder: true
+          archiveType: 'zip'
+          archiveFile: '$(Build.ArtifactStagingDirectory)/$(Build.BuildId).zip'
+          replaceExistingArchive: true
+
+      - task: PublishPipelineArtifact@1
+        inputs:
+          targetPath: '$(build.artifactstagingdirectory)'
+          artifactName: 'VSBuildResults'
+
+
+    - job: Linux
+      pool:
+        vmImage: 'macOS-latest'
+
+      steps:
+      - task: DownloadPipelineArtifact@2
+        inputs:
+          buildType: 'current'
+          artifactName: 'VSBuildResults'
+          targetPath: '$(Pipeline.Workspace)'
+        
+      - script: |
+          ls -lta '$(Pipeline.Workspace)'
+
+      # - script: sudo npm install -g appcenter-cli
+      # - script: appcenter login --token {YOUR_TOKEN}
+
+      # - task: AppCenterDistribute@3
+      #   inputs:
+      #     serverEndpoint: 'UWP-Sample-App'
+      #     appSlug: '$(appSlug)'
+      #     buildVersion: '$(Build.BuildNumber)'
+      #     appFile: '$(Build.ArtifactStagingDirectory)/$(Build.BuildId).zip'
+      #     releaseNotesOption: 'input'
+      #     releaseNotesInput: 'New release!'
+      #     destinationType: 'groups'
+      #     distributionGroupId: '$(distributionGroupId)'
