@@ -94,10 +94,10 @@ jobs:
 
       - task: AppCenterDistribute@3
         inputs:
-          serverEndpoint: 'UWP-Sample-App'
+          serverEndpoint: 'AppCenter'
           appSlug: '$(appSlug)'
-          buildVersion: '$(Build.BuildNumber)'
           appFile: '$(Pipeline.Workspace)/$(Build.BuildId).zip'
+          buildVersion: '$(Build.BuildNumber)'
           symbolsOption: 'Windows'
           releaseNotesOption: 'input'
           releaseNotesInput: 'New release!'
