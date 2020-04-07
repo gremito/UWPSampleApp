@@ -11,94 +11,67 @@ trigger:
         include:
             - '*'
 
-jobs:
-    - job: Windows
-      pool:
-        vmImage: 'windows-latest'
+pool:
+  vmImage: 'windows-latest'
 
-      variables:
-        solution: './*.sln'
-        buildPlatform: 'x86|x64|ARM'
-        buildConfiguration: 'Release'
-        appxPackageDir: '$(build.artifactStagingDirectory)\AppxPackages\\'
+variables:
+  solution: './*.sln'
+  buildPlatform: 'x86|x64|ARM'
+  buildConfiguration: 'Release'
+  appxPackageDir: '$(build.artifactStagingDirectory)\AppxPackages\\'
 
-      steps:
-      - task: NuGetToolInstaller@1
+steps:
+  - task: NuGetToolInstaller@1
 
-      - task: NuGetCommand@2
-        inputs:
-          restoreSolution: '$(solution)'
+  - task: NuGetCommand@2
+    inputs:
+      restoreSolution: '$(solution)'
 
-      - task: VSBuild@1
-        inputs:
-          platform: 'x86'
-          solution: '$(solution)'
-          configuration: '$(buildConfiguration)'
-          # msbuildArgs: '/p:AppxBundlePlatforms="$(buildPlatform)" 
-          #               /p:AppxPackageDir="$(appxPackageDir)" 
-          #               /p:AppxBundle=Always 
-          #               /p:UapAppxPackageBuildMode=StoreUpload 
-          #               /p:AppxPackageSigningEnabled=true
-          #               /p:PackageCertificateThumbprint="$(signingCert.thumbprint)" 
-          #               /p:PackageCertificateKeyFile="$(mySecureFile.secureFilePath)"
-          #               /p:PackageCertificatePassword="$(signingCert.password)"'
-          msbuildArgs: '/p:AppxBundlePlatforms="$(buildPlatform)" 
-                        /p:AppxPackageDir="$(appxPackageDir)" 
-                        /p:AppxBundle=Always 
-                        /p:UapAppxPackageBuildMode=StoreUpload'
+  - task: VSBuild@1
+    inputs:
+      platform: 'x86'
+      solution: '$(solution)'
+      configuration: '$(buildConfiguration)'
+      # msbuildArgs: '/p:AppxBundlePlatforms="$(buildPlatform)" 
+      #               /p:AppxPackageDir="$(appxPackageDir)" 
+      #               /p:AppxBundle=Always 
+      #               /p:UapAppxPackageBuildMode=StoreUpload 
+      #               /p:AppxPackageSigningEnabled=true
+      #               /p:PackageCertificateThumbprint="$(signingCert.thumbprint)" 
+      #               /p:PackageCertificateKeyFile="$(mySecureFile.secureFilePath)"
+      #               /p:PackageCertificatePassword="$(signingCert.password)"'
+      msbuildArgs: '/p:AppxBundlePlatforms="$(buildPlatform)" 
+                    /p:AppxPackageDir="$(appxPackageDir)" 
+                    /p:AppxBundle=Always 
+                    /p:UapAppxPackageBuildMode=StoreUpload'
 
-      - task: CopyFiles@2
-        displayName: 'Copy Files to: $(build.artifactstagingdirectory)'
-        inputs:
-          SourceFolder: '$(system.defaultworkingdirectory)'
-          Contents: '**\bin\$(BuildConfiguration)\**'
-          TargetFolder: '$(build.artifactstagingdirectory)'
+  - task: CopyFiles@2
+    displayName: 'Copy Files to: $(build.artifactstagingdirectory)'
+    inputs:
+      SourceFolder: '$(system.defaultworkingdirectory)'
+      Contents: '**\bin\$(BuildConfiguration)\**'
+      TargetFolder: '$(build.artifactstagingdirectory)'
 
-      - task: ArchiveFiles@2
-        inputs:
-          rootFolderOrFile: '$(build.artifactstagingdirectory)'
-          includeRootFolder: true
-          archiveType: 'zip'
-          archiveFile: '$(Build.ArtifactStagingDirectory)/$(Build.BuildId).zip'
-          replaceExistingArchive: true
+  - task: ArchiveFiles@2
+    inputs:
+      rootFolderOrFile: '$(build.artifactstagingdirectory)'
+      includeRootFolder: true
+      archiveType: 'zip'
+      archiveFile: '$(Build.ArtifactStagingDirectory)/$(Build.BuildId).zip'
+      replaceExistingArchive: true
 
-      - task: PublishPipelineArtifact@1
-        inputs:
-          targetPath: '$(build.artifactstagingdirectory)'
-          artifactName: 'VSBuildResults'
+  - task: PublishPipelineArtifact@1
+    inputs:
+      targetPath: '$(build.artifactstagingdirectory)'
+      artifactName: 'VSBuildResults'
 
-
-    - job: Linux
-
-      dependsOn:
-        - Windows
-      pool:
-        vmImage: 'macOS-latest'
-
-      steps:
-      - task: DownloadPipelineArtifact@2
-        inputs:
-          buildType: 'current'
-          artifactName: 'VSBuildResults'
-          targetPath: '$(Pipeline.Workspace)'
-        
-      - script: |
-          ls -lta '$(Pipeline.Workspace)'
-          ls -lta '$(Pipeline.Workspace)/$(Build.BuildId).zip'
-        displayName: "check DownloadPipelineArtifact"
-
-      - script: |
-          sudo npm install -g appcenter-cli
-          appcenter login --token {APPCENTER_TOKEN}
-        displayName: "appcenter login"
-
-      - task: AppCenterDistribute@3
-        inputs:
-          serverEndpoint: 'AppCenter'
-          appSlug: '$(appSlug)'
-          appFile: '$(Pipeline.Workspace)/$(Build.BuildId).zip'
-          buildVersion: '$(Build.BuildNumber)'
-          symbolsOption: 'Windows'
-          releaseNotesOption: 'input'
-          releaseNotesInput: 'New release!'
-          destinationType: 'groups'
+  - task: AppCenterDistribute@3
+    inputs:
+      serverEndpoint: 'AppCenter'
+      appSlug: '$(appSlug)'
+      appFile: '$(Pipeline.Workspace)/$(Build.BuildId).zip'
+      buildVersion: '$(Build.BuildNumber)'
+      symbolsOption: 'Windows'
+      releaseNotesOption: 'input'
+      releaseNotesInput: 'New release!'
+      destinationType: 'groups'
