@@ -84,17 +84,21 @@ jobs:
         
       - script: |
           ls -lta '$(Pipeline.Workspace)'
+          ls -lta '$(Pipeline.Workspace)/$(Build.BuildId).zip'
+        displayName: "check DownloadPipelineArtifact"
 
-      # - script: sudo npm install -g appcenter-cli
-      # - script: appcenter login --token {YOUR_TOKEN}
+      - script: |
+          sudo npm install -g appcenter-cli
+          appcenter login --token {APPCENTER_TOKEN}
+        displayName: "appcenter login"
 
-      # - task: AppCenterDistribute@3
-      #   inputs:
-      #     serverEndpoint: 'UWP-Sample-App'
-      #     appSlug: '$(appSlug)'
-      #     buildVersion: '$(Build.BuildNumber)'
-      #     appFile: '$(Build.ArtifactStagingDirectory)/$(Build.BuildId).zip'
-      #     releaseNotesOption: 'input'
-      #     releaseNotesInput: 'New release!'
-      #     destinationType: 'groups'
-      #     distributionGroupId: '$(distributionGroupId)'
+      - task: AppCenterDistribute@3
+        inputs:
+          serverEndpoint: 'UWP-Sample-App'
+          appSlug: '$(appSlug)'
+          buildVersion: '$(Build.BuildNumber)'
+          appFile: '$(Pipeline.Workspace)/$(Build.BuildId).zip'
+          symbolsOption: 'Windows'
+          releaseNotesOption: 'input'
+          releaseNotesInput: 'New release!'
+          destinationType: 'groups'
